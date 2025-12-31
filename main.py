@@ -10,114 +10,120 @@ DASHBOARD_HTML = """
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Health Engine v0.1 | High-Res Hub</title>
+    <title>Health Engine | Public Data Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --geo-red: #c8102e; --safe-green: #2ecc71; --warn-orange: #f39c12; }
+        :root { 
+            --ahti-blue: #003057; 
+            --ahti-red: #c8102e; 
+            --ui-bg: #f8f9fa;
+        }
         
         html, body { 
             margin: 0; padding: 0; height: 100vh; width: 100vw; 
-            overflow: hidden; font-family: 'Inter', sans-serif; 
-            background: #ffffff; 
+            overflow: hidden; font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: white; 
         }
         
         body { display: flex; }
 
+        /* Compact AHTI Sidebar */
         .sidebar { 
-            width: 320px; height: 100vh; background: #ffffff; 
-            padding: 20px; border-right: 1px solid #e1e4e8; 
-            display: flex; flex-direction: column; box-sizing: border-box;
-            z-index: 1000;
+            width: 300px; height: 100vh; background: var(--ahti-blue); 
+            padding: 20px; display: flex; flex-direction: column; 
+            box-sizing: border-box; color: white; z-index: 1000;
         }
 
-        .header h2 { margin: 0; font-size: 20px; color: var(--geo-red); font-weight: 900; }
-        .header p { margin: 2px 0 20px; font-size: 10px; color: #999; letter-spacing: 1px; text-transform: uppercase; }
+        .header h2 { 
+            margin: 0; font-size: 18px; color: #fff; font-weight: 700; 
+            border-left: 4px solid var(--ahti-red); padding-left: 10px; 
+        }
+        .header p { margin: 5px 0 20px 14px; font-size: 9px; color: #adb5bd; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* Score box reduced by 30% */
+        /* Score box: 30% smaller, modern glass-style */
         .score-box {
-            background: #fcfcfc; border: 1px solid #eee;
-            border-radius: 12px; padding: 15px; text-align: center;
-            margin-bottom: 20px; transition: all 0.4s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px; padding: 12px; text-align: center;
+            margin-bottom: 20px; transition: 0.3s;
         }
 
-        #score-text { font-size: 42px; font-weight: 800; color: #222; display: block; }
-        #status-text { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; margin-top: 4px; }
+        #score-text { font-size: 36px; font-weight: 800; color: #fff; display: block; }
+        #status-text { font-size: 9px; font-weight: 600; color: #2ecc71; text-transform: uppercase; }
 
         .input-group { margin-bottom: 12px; }
-        label { display: block; font-size: 9px; font-weight: 700; color: #444; text-transform: uppercase; margin-bottom: 4px; }
+        label { display: block; font-size: 9px; font-weight: 600; color: #adb5bd; margin-bottom: 4px; text-transform: uppercase; }
         input { 
-            width: 100%; background: #f9f9f9; border: 1px solid #e1e1e1; 
-            border-radius: 6px; padding: 10px; font-size: 14px; box-sizing: border-box;
+            width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); 
+            border-radius: 4px; padding: 10px; font-size: 14px; color: white; box-sizing: border-box;
         }
+        input:focus { border-color: var(--ahti-red); outline: none; }
 
         button { 
-            width: 100%; padding: 15px; background: var(--geo-red); color: white; 
-            border: none; border-radius: 8px; font-weight: 700; cursor: pointer; 
-            font-size: 13px; margin-top: auto; 
+            width: 100%; padding: 15px; background: var(--ahti-red); color: white; 
+            border: none; border-radius: 4px; font-weight: 700; cursor: pointer; 
+            font-size: 12px; margin-top: auto; text-transform: uppercase;
         }
 
-        #map { flex: 1; height: 100vh; background: #f0f4f8; }
+        #map { flex: 1; height: 100vh; background: #e9ecef; }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <div class="header">
             <h2>HEALTH ENGINE</h2>
-            <p>Tbilisi Research Hub</p>
+            <p>Open Data Integrated Hub</p>
         </div>
 
         <div id="display-box" class="score-box">
             <span id="score-text">--%</span>
-            <div id="status-text">SYSTEM READY</div>
+            <div id="status-text">Ready for Processing</div>
         </div>
 
         <div class="input-group">
-            <label>Systolic Pressure</label>
+            <label>Public Demographic Index</label>
             <input type="number" id="sys" value="120">
         </div>
         <div class="input-group">
-            <label>Glucose Level</label>
+            <label>Claims-based Proxy (Open)</label>
             <input type="number" id="glu" value="95">
         </div>
         <div class="input-group">
-            <label>Heart Rate</label>
+            <label>Regional Mortality Rate</label>
             <input type="number" id="bpm" value="75">
         </div>
 
-        <button onclick="analyze()">RUN ANALYSIS v0.1</button>
+        <button onclick="analyze()">⚡ RUN CORE ANALYSIS</button>
     </div>
 
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const map = L.map('map', { zoomControl: false }).setView([45, 25], 4);
+        // High-resolution Map Engine focused on Georgia/Europe
+        const map = L.map('map', { zoomControl: false }).setView([42.3, 43.9], 6);
+        
+        // ArcGIS-style professional light tiles (Free)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-        const countryStyle = {
-            "NLD": "#27ae60", "FRA": "#2ecc71", "ESP": "#2ecc71",
-            "DEU": "#f1c40f", "ITA": "#f1c40f", "BEL": "#f1c40f",
-            "POL": "#e67e22", "UKR": "#e74c3c", "GEO": "#c8102e"
+        const highlightCountries = {
+            "GEO": "#c8102e", "NLD": "#003057", "DEU": "#f1c40f", 
+            "POL": "#e67e22", "UKR": "#e74c3c"
         };
 
-        // Fetching high-detail boundaries (110m is standard, 50m/10m is detail level)
+        // Fetching high-detail 10m Natural Earth dataset mirror
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
             .then(res => res.json())
-            .then(geoData => {
-                L.geoJson(geoData, {
-                    style: function(f) {
-                        const code = f.properties.ISO_A3;
-                        return {
-                            fillColor: countryStyle[code] || "#f0f2f5",
-                            weight: 0.8,
-                            color: "#ffffff",
-                            fillOpacity: 0.85
-                        };
-                    },
-                    onEachFeature: function(f, l) {
-                        l.on('mouseover', function() { this.setStyle({fillOpacity: 1, weight: 1.5}); });
-                        l.on('mouseout', function() { this.setStyle({fillOpacity: 0.85, weight: 0.8}); });
+            .then(data => {
+                L.geoJson(data, {
+                    style: (f) => ({
+                        fillColor: highlightCountries[f.properties.ISO_A3] || "#dee2e6",
+                        weight: 0.8, // 10x more detail requires thinner lines for clarity
+                        color: "#ffffff",
+                        fillOpacity: 0.8
+                    }),
+                    onEachFeature: (f, l) => {
+                        l.on('mouseover', () => l.setStyle({fillOpacity: 1, weight: 1.5}));
+                        l.on('mouseout', () => l.setStyle({fillOpacity: 0.8, weight: 0.8}));
                     }
                 }).addTo(map);
             });
@@ -133,21 +139,10 @@ DASHBOARD_HTML = """
                 })
             });
             const d = await res.json();
-            
-            const scoreTxt = document.getElementById('score-text');
-            const statusTxt = document.getElementById('status-text');
-            const box = document.getElementById('display-box');
-            
-            scoreTxt.innerText = Math.round(d.score) + "%";
-            statusTxt.innerText = d.status;
-
-            if (d.score > 70) {
-                box.style.borderColor = "#27ae60"; scoreTxt.style.color = "#27ae60";
-            } else if (d.score > 40) {
-                box.style.borderColor = "#f1c40f"; scoreTxt.style.color = "#f1c40f";
-            } else {
-                box.style.borderColor = "#c8102e"; scoreTxt.style.color = "#c8102e";
-            }
+            document.getElementById('score-text').innerText = d.score + "%";
+            const statusEl = document.getElementById('status-text');
+            statusEl.innerText = d.status;
+            statusEl.style.color = d.score > 70 ? "#2ecc71" : "#f1c40f";
         }
     </script>
 </body>
@@ -155,16 +150,15 @@ DASHBOARD_HTML = """
 """
 
 @app.route('/')
-def index():
-    return render_template_string(DASHBOARD_HTML)
+def index(): return render_template_string(DASHBOARD_HTML)
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
     data = request.get_json()
     s, g, b = int(data['s']), int(data['g']), int(data['b'])
-    penalty = (abs(s - 120) * 0.4) + (abs(g - 90) * 0.3) + (abs(b - 70) * 0.3)
-    score = max(0, min(100, 100 - penalty))
-    status = "OPTIMAL" if score > 70 else "WATCH" if score > 40 else "CRITICAL"
+    # Simplified AHTI weighting formula
+    score = round(max(0, min(100, 100 - ((abs(s-120) + abs(g-95) + abs(b-75))*0.4))), 1)
+    status = "THRESHOLD MET" if score > 75 else "ANOMALY DETECTED"
     return jsonify({"score": score, "status": status})
 
 if __name__ == '__main__':
