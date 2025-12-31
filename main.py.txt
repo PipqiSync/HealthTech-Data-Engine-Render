@@ -1,0 +1,88 @@
+import os
+from flask import Flask, jsonify, request, render_template_string
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
+
+DASHBOARD_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Health Engine v0.1</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root { --geo-red: #c8102e; }
+        html, body { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #fff; }
+        body { display: flex; }
+        .sidebar { width: 320px; height: 100vh; background: white; padding: 25px; border-right: 5px solid var(--geo-red); box-shadow: 2px 0 15px rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; }
+        #map { flex: 1; height: 100vh; background: #eef2f3; }
+        .header-area { margin-bottom: 20px; }
+        .tbilisi-hub { font-size: 11px; color: #aaa; font-weight: bold; letter-spacing: 1px; }
+        .score-box { padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 20px; border: 2px solid #eee; transition: all 0.4s ease; flex-shrink: 0; }
+        .score-val { font-size: 48px; font-weight: bold; display: block; }
+        .status-txt { font-weight: bold; text-transform: uppercase; font-size: 14px; margin-top: 5px; }
+        .input-group { margin-bottom: 15px; flex-shrink: 0; }
+        label { font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; background: #fafafa; }
+        button { width: 100%; padding: 16px; background: var(--geo-red); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: auto; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="header-area">
+            <h2 style="color: var(--geo-red); margin: 0; font-size: 22px;">Health Engine <small style="color:#999; font-weight:300;">v0.1</small></h2>
+            <div class="tbilisi-hub">TBILISI RESEARCH HUB</div>
+        </div>
+        <div id="display-box" class="score-box">
+            <span id="score-text" class="score-val">--%</span>
+            <div id="status-text" class="status-txt">READY</div>
+        </div>
+        <div class="input-group"><label>Systolic Blood Pressure</label><input type="number" id="sys" value="120"></div>
+        <div class="input-group"><label>Glucose Level (mg/dL)</label><input type="number" id="glu" value="95"></div>
+        <div class="input-group"><label>Heart Rate (BPM)</label><input type="number" id="bpm" value="75"></div>
+        <button onclick="analyze()">⚡ RUN ANALYSIS v0.1</button>
+    </div>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map', { zoomControl: false }).setView([50, 18], 4);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
+        const pastelMap = {"NLD": "#b2dfdb", "FRA": "#b2dfdb", "ESP": "#b2dfdb", "DEU": "#fff9c4", "ITA": "#fff9c4", "BEL": "#fff9c4", "POL": "#ffcdd2", "GEO": "#c8102e", "UKR": "#ffcdd2"};
+        fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+            .then(res => res.json()).then(data => {
+                L.geoJson(data, { style: (f) => ({ fillColor: pastelMap[f.properties.ISO_A3] || "#eceff1", weight: 1.2, color: "white", fillOpacity: 0.9 }) }).addTo(map);
+            });
+        async function analyze() {
+            const res = await fetch('/analyze', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ s: document.getElementById('sys').value, g: document.getElementById('glu').value, b: document.getElementById('bpm').value })
+            });
+            const d = await res.json();
+            document.getElementById('score-text').innerText = d.score + "%";
+            document.getElementById('status-text').innerText = d.status;
+            const box = document.getElementById('display-box');
+            if (d.score > 70) { box.style.background = "#e8f5e9"; box.style.color = "#2e7d32"; }
+            else if (d.score > 40) { box.style.background = "#fff3e0"; box.style.color = "#ef6c00"; }
+            else { box.style.background = "#ffebee"; box.style.color = "#c62828"; }
+        }
+    </script>
+</body>
+</html>
+"""
+
+@app.route('/')
+def index(): return render_template_string(DASHBOARD_HTML)
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    data = request.get_json()
+    s, g, b = int(data['s']), int(data['g']), int(data['b'])
+    penalty = (abs(s - 120) * 0.4) + (abs(g - 90) * 0.3) + (abs(b - 70) * 0.3)
+    score = round(max(0, min(100, 100 - penalty)), 1)
+    status = "HEALTHY" if score > 70 else "UNHEALTHY" if score > 40 else "DANGEROUS"
+    return jsonify({"score": score, "status": status})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
