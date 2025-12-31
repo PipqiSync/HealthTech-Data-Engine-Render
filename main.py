@@ -5,6 +5,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
+# Meticulously formatted HTML/JS string to avoid SyntaxErrors
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -95,7 +96,9 @@ DASHBOARD_HTML = """
                                 this.setStyle({ fillOpacity: 1, weight: 2 });
                             }
                         });
-                        l.on('mouseout', function() { this.setStyle({ fillOpacity: 0.8, weight: 1 }); });
+                        l.on('mouseout', function() {
+                            this.setStyle({ fillOpacity: 0.8, weight: 1 });
+                        });
                     }
                 }).addTo(map);
             });
@@ -114,6 +117,10 @@ DASHBOARD_HTML = """
             document.getElementById('location-tag').innerText = "INDIVIDUAL RESULT";
             document.getElementById('score-text').innerText = d.score + "%";
             document.getElementById('status-text').innerText = d.status;
+            
+            // Match color to individual result
+            let c = d.score < 20 ? "#2ecc71" : d.score < 60 ? "#f1c40f" : "#c8102e";
+            document.getElementById('score-text').style.color = c;
         }
     </script>
 </body>
@@ -139,5 +146,6 @@ def analyze():
         return jsonify({"score": 0, "status": "Error"}), 400
 
 if __name__ == '__main__':
+    # Ensure it binds to the correct PORT for Render
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.
