@@ -5,67 +5,169 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
+# High-end UI with CSS Glassmorphism and Animated Gradients
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Health Engine v0.1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Engine v0.1 | Tbilisi Hub</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --geo-red: #c8102e; }
-        html, body { margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #fff; }
+        :root { 
+            --geo-red: #ff3b30; 
+            --bg-dark: #0a0a0c;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        html, body { 
+            margin: 0; padding: 0; height: 100vh; width: 100vw; 
+            overflow: hidden; font-family: 'Inter', -apple-system, sans-serif; 
+            background: var(--bg-dark); color: white;
+        }
+
         body { display: flex; }
-        .sidebar { width: 320px; height: 100vh; background: white; padding: 25px; border-right: 5px solid var(--geo-red); box-shadow: 2px 0 15px rgba(0,0,0,0.1); z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; }
-        #map { flex: 1; height: 100vh; background: #eef2f3; }
-        .header-area { margin-bottom: 20px; }
-        .tbilisi-hub { font-size: 11px; color: #aaa; font-weight: bold; letter-spacing: 1px; }
-        .score-box { padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 20px; border: 2px solid #eee; transition: all 0.4s ease; flex-shrink: 0; }
-        .score-val { font-size: 48px; font-weight: bold; display: block; }
-        .status-txt { font-weight: bold; text-transform: uppercase; font-size: 14px; margin-top: 5px; }
-        .input-group { margin-bottom: 15px; flex-shrink: 0; }
-        label { font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase; display: block; margin-bottom: 5px; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; background: #fafafa; }
-        button { width: 100%; padding: 16px; background: var(--geo-red); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: auto; flex-shrink: 0; }
+
+        .sidebar { 
+            width: 340px; height: 100vh; background: #111114; 
+            padding: 30px; border-right: 1px solid var(--border); 
+            display: flex; flex-direction: column; box-sizing: border-box;
+            z-index: 1000;
+        }
+
+        .header { margin-bottom: 30px; }
+        .header h2 { margin: 0; font-size: 20px; letter-spacing: -0.5px; color: var(--geo-red); }
+        .header p { margin: 5px 0 0; font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; }
+
+        .score-display {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #score-text { font-size: 64px; font-weight: 800; display: block; line-height: 1; margin-bottom: 10px; }
+        #status-text { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; opacity: 0.8; }
+
+        .input-section { flex-grow: 1; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-size: 9px; font-weight: 600; text-transform: uppercase; color: #888; margin-bottom: 8px; }
+        input { 
+            width: 100%; background: #1a1a1e; border: 1px solid var(--border); 
+            border-radius: 8px; padding: 12px; color: white; font-size: 16px; 
+            transition: border 0.3s;
+        }
+        input:focus { outline: none; border-color: var(--geo-red); }
+
+        button { 
+            width: 100%; padding: 16px; background: var(--geo-red); color: white; 
+            border: none; border-radius: 12px; font-weight: 700; cursor: pointer; 
+            font-size: 14px; text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: 0 10px 20px rgba(255, 59, 48, 0.2); transition: transform 0.2s;
+        }
+        button:hover { transform: translateY(-2px); }
+
+        #map { flex: 1; background: #0e0e10; }
+
+        /* Dark Map Overrides */
+        .leaflet-container { background: #0a0a0c !important; }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <div class="header-area">
-            <h2 style="color: var(--geo-red); margin: 0; font-size: 22px;">Health Engine <small style="color:#999; font-weight:300;">v0.1</small></h2>
-            <div class="tbilisi-hub">TBILISI RESEARCH HUB</div>
+        <div class="header">
+            <h2>HEALTH ENGINE <small style="color:white; opacity:0.3">v0.1</small></h2>
+            <p>Tbilisi Research Hub</p>
         </div>
-        <div id="display-box" class="score-box">
-            <span id="score-text" class="score-val">--%</span>
-            <div id="status-text" class="status-txt">READY</div>
+
+        <div id="display-box" class="score-display">
+            <span id="score-text">--</span>
+            <div id="status-text">INITIALIZING...</div>
         </div>
-        <div class="input-group"><label>Systolic Blood Pressure</label><input type="number" id="sys" value="120"></div>
-        <div class="input-group"><label>Glucose Level (mg/dL)</label><input type="number" id="glu" value="95"></div>
-        <div class="input-group"><label>Heart Rate (BPM)</label><input type="number" id="bpm" value="75"></div>
-        <button onclick="analyze()">⚡ RUN ANALYSIS v0.1</button>
+
+        <div class="input-section">
+            <div class="input-group">
+                <label>Systolic Pressure</label>
+                <input type="number" id="sys" value="120">
+            </div>
+            <div class="input-group">
+                <label>Glucose Level</label>
+                <input type="number" id="glu" value="95">
+            </div>
+            <div class="input-group">
+                <label>Heart Rate</label>
+                <input type="number" id="bpm" value="75">
+            </div>
+        </div>
+
+        <button onclick="analyze()">Execute Analysis</button>
     </div>
+
     <div id="map"></div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const map = L.map('map', { zoomControl: false }).setView([50, 18], 4);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
-        const pastelMap = {"NLD": "#b2dfdb", "FRA": "#b2dfdb", "ESP": "#b2dfdb", "DEU": "#fff9c4", "ITA": "#fff9c4", "BEL": "#fff9c4", "POL": "#ffcdd2", "GEO": "#c8102e", "UKR": "#ffcdd2"};
+        // Use a dark, minimal map style
+        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([50, 20], 4);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
+
+        // High-precision color mapping
+        const regionColors = {
+            "NLD": "#2ecc71", "FRA": "#2ecc71", "ESP": "#2ecc71", // Healthy (Pastel Green)
+            "DEU": "#f1c40f", "ITA": "#f1c40f", "BEL": "#f1c40f", // Warning (Pastel Yellow)
+            "POL": "#e74c3c", "UKR": "#e74c3c", "GEO": "#ff3b30"  // Critical (Red)
+        };
+
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
-            .then(res => res.json()).then(data => {
-                L.geoJson(data, { style: (f) => ({ fillColor: pastelMap[f.properties.ISO_A3] || "#eceff1", weight: 1.2, color: "white", fillOpacity: 0.9 }) }).addTo(map);
+            .then(res => res.json())
+            .then(data => {
+                L.geoJson(data, {
+                    style: (f) => ({
+                        fillColor: regionColors[f.properties.ISO_A3] || "#222",
+                        weight: 1,
+                        color: "#333",
+                        fillOpacity: 0.6
+                    }),
+                    onEachFeature: (f, l) => {
+                        l.on('mouseover', () => l.setStyle({ fillOpacity: 0.9, weight: 2 }));
+                        l.on('mouseout', () => l.setStyle({ fillOpacity: 0.6, weight: 1 }));
+                    }
+                }).addTo(map);
             });
+
         async function analyze() {
             const res = await fetch('/analyze', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ s: document.getElementById('sys').value, g: document.getElementById('glu').value, b: document.getElementById('bpm').value })
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ 
+                    s: document.getElementById('sys').value, 
+                    g: document.getElementById('glu').value, 
+                    b: document.getElementById('bpm').value 
+                })
             });
             const d = await res.json();
-            document.getElementById('score-text').innerText = d.score + "%";
-            document.getElementById('status-text').innerText = d.status;
+            
+            const scoreTxt = document.getElementById('score-text');
+            const statusTxt = document.getElementById('status-text');
             const box = document.getElementById('display-box');
-            if (d.score > 70) { box.style.background = "#e8f5e9"; box.style.color = "#2e7d32"; }
-            else if (d.score > 40) { box.style.background = "#fff3e0"; box.style.color = "#ef6c00"; }
-            else { box.style.background = "#ffebee"; box.style.color = "#c62828"; }
+            
+            scoreTxt.innerText = Math.round(d.score) + "%";
+            statusTxt.innerText = d.status;
+
+            // Hip visual feedback
+            if (d.score > 70) {
+                box.style.borderColor = "#2ecc71"; scoreTxt.style.color = "#2ecc71";
+            } else if (d.score > 40) {
+                box.style.borderColor = "#f1c40f"; scoreTxt.style.color = "#f1c40f";
+            } else {
+                box.style.borderColor = "#ff3b30"; scoreTxt.style.color = "#ff3b30";
+            }
         }
     </script>
 </body>
@@ -73,16 +175,18 @@ DASHBOARD_HTML = """
 """
 
 @app.route('/')
-def index(): return render_template_string(DASHBOARD_HTML)
+def index():
+    return render_template_string(DASHBOARD_HTML)
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
     data = request.get_json()
     s, g, b = int(data['s']), int(data['g']), int(data['b'])
     penalty = (abs(s - 120) * 0.4) + (abs(g - 90) * 0.3) + (abs(b - 70) * 0.3)
-    score = round(max(0, min(100, 100 - penalty)), 1)
-    status = "HEALTHY" if score > 70 else "UNHEALTHY" if score > 40 else "DANGEROUS"
+    score = max(0, min(100, 100 - penalty))
+    status = "OPTIMAL" if score > 70 else "DEVIATING" if score > 40 else "CRITICAL"
     return jsonify({"score": score, "status": status})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
